@@ -1,9 +1,12 @@
 use std::process;
 
+use config::DatabaseConfig;
 use sqlx::{Connection, PgConnection, migrate::Migrate};
 
-pub async fn connect(url: &String, schema_name: &str) -> PgConnection {
-    let connection = PgConnection::connect(url).await;
+pub async fn connect(db_conf: &DatabaseConfig) -> PgConnection {
+    let schema_name = &db_conf.schema_name;
+
+    let connection = PgConnection::connect(&db_conf.url()).await;
 
     let mut connection = match connection {
         Ok(connection) => {

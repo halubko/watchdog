@@ -9,3 +9,5 @@ path = "src/lib.rs"
 
 [dependencies]
 sqlx = {version = "0.9.0", features = ["postgres", "runtime-tokio"]}
+
+config = { path = "../config" }
