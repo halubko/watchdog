@@ -50,7 +50,7 @@ struct ServerConfig {
 pub fn config() -> Config {
     dotenvy::dotenv().ok();
 
-    let db_config: DatabaseConfig = match envy::from_env() {
+    let db_config: DatabaseConfig = match envy::prefixed("DATABSE_").from_env() {
         Ok(config) => config,
         Err(error) => {
             eprintln!("{:#?}", error);
@@ -58,7 +58,7 @@ pub fn config() -> Config {
         }
     };
 
-    let server_config: ServerConfig = match envy::from_env() {
+    let server_config: ServerConfig = match envy::prefixed("SERVER_").from_env() {
         Ok(config) => config,
         Err(error) => {
             eprintln!("{:#?}", error);
