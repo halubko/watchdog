@@ -1,0 +1,17 @@
+[package]
+name = "watchdog_db"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "watchdog_db"
+path = "src/lib.rs"
+
+[dependencies]
+sqlx = {version = "0.9.0", features = ["postgres", "runtime-tokio", "uuid", "chrono"]}
+uuid = "1.24.0"
+chrono = "0.4.45"
+thiserror = "2.0.19"
+
+watchdog_config = { path = "../watchdog_config" }
+watchdog_core = { path = "../watchdog_core" }

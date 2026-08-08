@@ -1,0 +1,13 @@
+[package]
+name = "watchdog_core"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "watchdog_core"
+path = "src/lib.rs"
+
+[dependencies]
+chrono = "0.4.45"
+thiserror = "2.0.19"
+uuid = "1.24.0"

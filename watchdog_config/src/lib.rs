@@ -1,11 +1,17 @@
-use std::process;
-
 use serde::Deserialize;
+
+#[derive(Debug, thiserror::Error)]
+pub enum ConfigErrors {
+    #[error("failed to load database config: {0}")]
+    DatabaseError(envy::Error),
+    #[error("failed to load server config: {0}")]
+    ServerError(envy::Error),
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub database: DatabaseConfig,
-    server: ServerConfig,
+    pub server: ServerConfig,
 }
 
 impl Config {
@@ -29,7 +35,7 @@ pub struct DatabaseConfig {
     port: u16,
     db_name: String,
     pub schema_name: String,
-    max_connections: u32,
+    pub max_connections: u32,
 }
 
 impl DatabaseConfig {
@@ -42,29 +48,21 @@ impl DatabaseConfig {
 }
 
 #[derive(Debug, Deserialize)]
-struct ServerConfig {
-    host: String,
-    port: u16,
+pub struct ServerConfig {
+    pub host: String,
+    pub port: u16,
 }
 
-pub fn config() -> Config {
+pub fn config() -> Result<Config, ConfigErrors> {
     dotenvy::dotenv().ok();
 
-    let db_config: DatabaseConfig = match envy::prefixed("DATABSE_").from_env() {
-        Ok(config) => config,
-        Err(error) => {
-            eprintln!("{:#?}", error);
-            process::exit(1)
-        }
-    };
+    let db_config: DatabaseConfig = envy::prefixed("DATABASE_")
+        .from_env()
+        .map_err(ConfigErrors::DatabaseError)?;
 
-    let server_config: ServerConfig = match envy::prefixed("SERVER_").from_env() {
-        Ok(config) => config,
-        Err(error) => {
-            eprintln!("{:#?}", error);
-            process::exit(1)
-        }
-    };
+    let server_config: ServerConfig = envy::prefixed("SERVER_")
+        .from_env()
+        .map_err(ConfigErrors::ServerError)?;
 
-    Config::new(db_config, server_config)
+    Ok(Config::new(db_config, server_config))
 }

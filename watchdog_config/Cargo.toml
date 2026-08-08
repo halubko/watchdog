@@ -1,13 +1,14 @@
 [package]
-name = "config"
+name = "watchdog_config"
 version = "0.1.0"
 edition = "2024"
 
 [lib]
-name = "config"
+name = "watchdog_config"
 path = "src/lib.rs"
 
 [dependencies]
 dotenvy = "0.15.7"
 envy = "0.4.2"
 serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0.19"
