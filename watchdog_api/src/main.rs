@@ -1,6 +1,6 @@
 use std::{process, sync::Arc};
 
-use watchdog_db::{check_result::PgCheckResultRepo, endpoint::PgEndpointRepo};
+use watchdog_db::{check_result::PgCheckResultRepo, endpoint::PgEndpointRepo, migrate};
 use watchdog_scheduler::run;
 
 use crate::app::AppState;
@@ -19,6 +19,8 @@ async fn main() {
         process::exit(1);
     });
 
+    tracing::info!("connecting to: {}", config.db_url());
+
     let pool = match watchdog_db::connect(&config.database).await {
         Ok(connection) => {
             tracing::info!("DB connected successfully");
@@ -29,6 +31,11 @@ async fn main() {
             process::exit(1)
         }
     };
+
+    if let Err(e) = migrate(&pool).await {
+        tracing::error!("{e}");
+        process::exit(1)
+    }
 
     let client = reqwest::Client::new();
     let endpoint_repo = PgEndpointRepo::new(pool.clone());

@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:18
+    restart: always
+    shm_size: 128mb
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: watchdog
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: watchdog:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_USER: postgres
+      DATABASE_HOST: db
+      DATABASE_PASSWORD: admin
+      DATABASE_PORT: 5432
+      DATABASE_DB_NAME: watchdog
+      DATABASE_MAX_CONNECTIONS: 4
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 3000

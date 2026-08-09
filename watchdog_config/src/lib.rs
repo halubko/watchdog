@@ -34,7 +34,6 @@ pub struct DatabaseConfig {
     password: String,
     port: u16,
     db_name: String,
-    pub schema_name: String,
     pub max_connections: u32,
 }
 
