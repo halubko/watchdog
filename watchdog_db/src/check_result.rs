@@ -4,6 +4,7 @@ use watchdog_core::{CheckResult, CheckResultRepo, CheckStatus, FailureReason, Re
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+#[derive(Clone)]
 pub struct PgCheckResultRepo {
     pool: PgPool,
 }
@@ -43,7 +44,7 @@ enum Reason {
     Other,
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, PartialEq)]
 enum CheckResultConvertError {
     #[error("row has status 'success' but status_code or latency_ms is missing")]
     MissingSuccessFields,
@@ -51,6 +52,8 @@ enum CheckResultConvertError {
     MissingUnexpectedSuccessFields,
     #[error("row has status 'fail' but failure_reason is missing")]
     MissingFailureReason,
+    #[error("row has status 'fail' and failure_messgae 'other' but failure_message is missing")]
+    MissingFailureMessage,
 }
 
 impl TryFrom<CheckResultRow> for CheckResult {
@@ -89,7 +92,7 @@ impl TryFrom<CheckResultRow> for CheckResult {
                     Reason::Other => FailureReason::Other(
                         value
                             .failure_message
-                            .ok_or(CheckResultConvertError::MissingFailureReason)?,
+                            .ok_or(CheckResultConvertError::MissingFailureMessage)?,
                     ),
                 },
             },
@@ -210,5 +213,195 @@ impl CheckResultRepo for PgCheckResultRepo {
             .map_err(|err| RepoError::Database(err.to_string()))?
             .uptime_percentage.unwrap_or(0.0))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fixed_date() -> DateTime<Utc> {
+        chrono::DateTime::parse_from_rfc3339("2026-01-01T12:00:00Z")
+            .unwrap()
+            .to_utc()
+    }
+
+    struct FixedUuids {
+        id: Uuid,
+        endpoint_id: Uuid,
+    }
+
+    fn fixed_uuids() -> FixedUuids {
+        FixedUuids {
+            id: uuid::uuid!("fdf20fdd-746d-4d1f-85f2-27695efe62db"),
+            endpoint_id: uuid::uuid!("11111111-1111-1111-1111-111111111111"),
+        }
+    }
+
+    #[test]
+    fn try_from_check_result_row_success_to_check_result_success() {
+        let uuids = fixed_uuids();
+
+        let check_result_row_success = CheckResultRow {
+            id: uuids.id,
+            endpoint_id: uuids.endpoint_id,
+            date: fixed_date(),
+            status: CheckResultRowStatus::Success,
+            status_code: Some(200),
+            latency_ms: Some(42),
+            failure_message: None,
+            failure_reason: None,
+        };
+
+        let check_result_success = CheckResult {
+            id: uuids.id,
+            endpoint_id: uuids.endpoint_id,
+            date: fixed_date(),
+            status: CheckStatus::Success {
+                status_code: 200,
+                latency_ms: 42,
+            },
+        };
+
+        assert_eq!(
+            check_result_success,
+            check_result_row_success.try_into().expect("msg")
+        );
+    }
+
+    #[test]
+    fn try_from_check_result_row_unexpected_status_to_check_result_unexpected_status() {
+        let uuids = fixed_uuids();
+
+        let check_result_row_unexpected_status = CheckResultRow {
+            id: uuids.id,
+            endpoint_id: uuids.endpoint_id,
+            date: fixed_date(),
+            status: CheckResultRowStatus::UnexpectedStatus,
+            status_code: Some(200),
+            latency_ms: Some(42),
+            failure_message: None,
+            failure_reason: None,
+        };
+
+        let check_result_undexpected_status = CheckResult {
+            id: uuids.id,
+            endpoint_id: uuids.endpoint_id,
+            date: fixed_date(),
+            status: CheckStatus::UnexpectedStatus {
+                status_code: 200,
+                latency_ms: 42,
+            },
+        };
+
+        assert_eq!(
+            check_result_undexpected_status,
+            check_result_row_unexpected_status.try_into().expect("msg")
+        );
+    }
+
+    #[test]
+    fn try_from_check_result_row_fail_timouot_to_check_result_fail_timeoute() {
+        let uuids = fixed_uuids();
+
+        let check_result_row_unexpected_status = CheckResultRow {
+            id: uuids.id,
+            endpoint_id: uuids.endpoint_id,
+            date: fixed_date(),
+            status: CheckResultRowStatus::Fail,
+            status_code: None,
+            latency_ms: None,
+            failure_message: None,
+            failure_reason: Some(Reason::Timeout),
+        };
+
+        let check_result_undexpected_status = CheckResult {
+            id: uuids.id,
+            endpoint_id: uuids.endpoint_id,
+            date: fixed_date(),
+            status: CheckStatus::Fail {
+                reason: FailureReason::Timeout,
+            },
+        };
+
+        assert_eq!(
+            check_result_undexpected_status,
+            check_result_row_unexpected_status.try_into().expect("msg")
+        );
+    }
+
+    #[test]
+    fn try_from_check_result_row_success_missing_status_code_returns_error() {
+        let row = CheckResultRow {
+            id: fixed_uuids().id,
+            endpoint_id: fixed_uuids().endpoint_id,
+            date: fixed_date(),
+            status: CheckResultRowStatus::Success,
+            status_code: None,
+            latency_ms: Some(42),
+            failure_message: None,
+            failure_reason: None,
+        };
+
+        let result: Result<CheckResult, CheckResultConvertError> = row.try_into();
+
+        assert_eq!(result, Err(CheckResultConvertError::MissingSuccessFields))
+    }
+
+    #[test]
+    fn try_from_check_result_row_fail_missing_failure_reason_returns_error() {
+        let row = CheckResultRow {
+            id: fixed_uuids().id,
+            endpoint_id: fixed_uuids().endpoint_id,
+            date: fixed_date(),
+            status: CheckResultRowStatus::Fail,
+            status_code: None,
+            latency_ms: None,
+            failure_message: None,
+            failure_reason: None,
+        };
+
+        let result: Result<CheckResult, CheckResultConvertError> = row.try_into();
+
+        assert_eq!(result, Err(CheckResultConvertError::MissingFailureReason))
+    }
+
+    #[test]
+    fn try_from_check_result_row_fail_other_missing_failure_other_returns_error() {
+        let row = CheckResultRow {
+            id: fixed_uuids().id,
+            endpoint_id: fixed_uuids().endpoint_id,
+            date: fixed_date(),
+            status: CheckResultRowStatus::Fail,
+            status_code: None,
+            latency_ms: None,
+            failure_message: None,
+            failure_reason: Some(Reason::Other),
+        };
+
+        let result: Result<CheckResult, CheckResultConvertError> = row.try_into();
+
+        assert_eq!(result, Err(CheckResultConvertError::MissingFailureMessage))
+    }
+
+    #[test]
+    fn try_from_check_result_row_unexpected_status_missing_latency_ms_returns_error() {
+        let row = CheckResultRow {
+            id: fixed_uuids().id,
+            endpoint_id: fixed_uuids().endpoint_id,
+            date: fixed_date(),
+            status: CheckResultRowStatus::UnexpectedStatus,
+            status_code: Some(200),
+            latency_ms: None,
+            failure_message: None,
+            failure_reason: None,
+        };
+
+        let result: Result<CheckResult, CheckResultConvertError> = row.try_into();
+
+        assert_eq!(
+            result,
+            Err(CheckResultConvertError::MissingUnexpectedSuccessFields)
+        )
     }
 }

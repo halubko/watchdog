@@ -4,6 +4,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use watchdog_core::{Endpoint, EndpointRepo, RepoError};
 
+#[derive(Clone)]
 pub struct PgEndpointRepo {
     pool: PgPool,
 }

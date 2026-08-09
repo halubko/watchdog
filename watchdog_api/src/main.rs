@@ -1,6 +1,7 @@
 use std::{process, sync::Arc};
 
 use watchdog_db::{check_result::PgCheckResultRepo, endpoint::PgEndpointRepo};
+use watchdog_scheduler::run;
 
 use crate::app::AppState;
 
@@ -29,10 +30,14 @@ async fn main() {
         }
     };
 
+    let client = reqwest::Client::new();
     let endpoint_repo = PgEndpointRepo::new(pool.clone());
     let check_results_repo = PgCheckResultRepo::new(pool);
 
-    let state = Arc::new(AppState::new(endpoint_repo, check_results_repo));
+    let state = Arc::new(AppState::new(
+        endpoint_repo.clone(),
+        check_results_repo.clone(),
+    ));
 
     let app = app::app(state);
 
@@ -51,8 +56,11 @@ async fn main() {
 
     tracing::info!("listening on {}:{}", config.server.host, config.server.port);
 
-    if let Err(err) = axum::serve(listener, app).await {
-        tracing::error!("{err}");
+    if let (Err(e), ()) = tokio::join!(
+        axum::serve(listener, app),
+        run(endpoint_repo, check_results_repo, client)
+    ) {
+        tracing::error!("{e}");
         process::exit(1)
-    }
+    };
 }

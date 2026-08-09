@@ -1,8 +1,7 @@
 [package]
 name = "watchdog_core"
-version = "0.1.0"
-edition = "2024"
-
+version.workspace = true
+edition.workspace = true
 [lib]
 name = "watchdog_core"
 path = "src/lib.rs"

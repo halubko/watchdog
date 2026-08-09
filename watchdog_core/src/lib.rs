@@ -18,6 +18,7 @@ pub struct NewEndpoint {
     pub expected_status: u16,
 }
 
+#[derive(PartialEq, Debug)]
 pub struct CheckResult {
     pub id: Uuid,
     pub endpoint_id: Uuid,
@@ -30,11 +31,14 @@ pub struct NewCheckResult {
     pub status: CheckStatus,
 }
 
+#[derive(PartialEq, Debug)]
 pub enum CheckStatus {
     Success { status_code: u16, latency_ms: u64 },
     UnexpectedStatus { status_code: u16, latency_ms: u64 },
     Fail { reason: FailureReason },
 }
+
+#[derive(PartialEq, Eq, Debug)]
 
 pub enum FailureReason {
     Timeout,

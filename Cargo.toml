@@ -1,5 +1,5 @@
 [workspace]
-members = ["watchdog_api", "watchdog_config", "watchdog_db", "watchdog_core"]
+members = ["watchdog_api", "watchdog_config", "watchdog_db", "watchdog_core", "watchdog_scheduler"]
 resolver = "3"
 
 [workspace.package]
@@ -18,7 +18,9 @@ chrono = { version = "0.4.45", features = ["serde"] }
 sqlx = {version = "0.9.0", features = ["postgres", "runtime-tokio", "uuid", "chrono"]}
 dotenvy = "0.15.7"
 envy = "0.4.2"
+reqwest = "0.13.4"
 
 watchdog_config = { path = "../watchdog_config" }
 watchdog_db = { path = "../watchdog_db" }
 watchdog_core = { path = "../watchdog_core" }
+watchdog_scheduler = { path = "../watchdog_scheduler" }
