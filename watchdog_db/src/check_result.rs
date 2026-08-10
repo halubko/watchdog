@@ -44,6 +44,7 @@ enum Reason {
     Other,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, thiserror::Error, PartialEq)]
 enum CheckResultConvertError {
     #[error("row has status 'success' but status_code or latency_ms is missing")]
