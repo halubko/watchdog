@@ -36,6 +36,7 @@ impl From<EndpointRow> for Endpoint {
     }
 }
 
+#[allow(clippy::manual_async_fn)]
 impl EndpointRepo for PgEndpointRepo {
     fn create(
         &self,

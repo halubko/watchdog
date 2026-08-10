@@ -107,6 +107,7 @@ impl TryFrom<CheckResultRow> for CheckResult {
     }
 }
 
+#[allow(clippy::manual_async_fn)]
 impl CheckResultRepo for PgCheckResultRepo {
     fn save(
         &self,
