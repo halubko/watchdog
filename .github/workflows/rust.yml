@@ -1,6 +1,7 @@
 name: Rust
 run-name: Rust
-on: [push]
+on: [push, pull_request]
+
 jobs:
     cache:
       runs-on: ubuntu-latest
@@ -19,7 +20,21 @@ jobs:
                 target
             key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    build:
+    fmt:
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v6
+      - name: Format
+        run: cargo fmt --all -- --check
+    
+    clippy:
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v6
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings        
+    
+    test:
       runs-on: ubuntu-latest
       strategy:
         matrix:
@@ -28,7 +43,5 @@ jobs:
         release_built: ${{ steps.set-output.outputs.release_built }}
       steps:
         - uses: actions/checkout@v6
-        - name: Build binaries in "${{ matrix.BUILD_TARGET }}" mode
-          run: cargo build --profile ${{ matrix.BUILD_TARGET }}
         - name: Run tests in "${{ matrix.BUILD_TARGET }}" mode
           run: cargo test --profile ${{ matrix.BUILD_TARGET }}

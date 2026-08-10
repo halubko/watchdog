@@ -1,7 +1,6 @@
 .env
 
 /target
-.sqlx
 
 /vscode
 .idea

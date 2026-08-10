@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    SELECT id, url, interval_seconds, timeout, expected_status FROM endpoints WHERE id = $1\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "endpoints",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "url",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "endpoints",
+            "name": "url"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "interval_seconds",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "endpoints",
+            "name": "interval_seconds"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "timeout",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "endpoints",
+            "name": "timeout"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "expected_status",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "endpoints",
+            "name": "expected_status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "3f3f70234c6ce6390bfe9014008bb49d40c224d70d722b69d25b7ade4faf8781"
+}

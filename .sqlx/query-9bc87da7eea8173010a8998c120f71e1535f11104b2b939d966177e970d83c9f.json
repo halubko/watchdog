@@ -1,0 +1,137 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    SELECT id, endpoint_id, date, status_code, latency_ms, failure_reason as \"failure_reason: Reason\", failure_message, status as \"status: CheckResultRowStatus\" FROM check_results\n                    WHERE endpoint_id = $1\n                    LIMIT $2\n                    OFFSET $3\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "check_results",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "endpoint_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "check_results",
+            "name": "endpoint_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "date",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "check_results",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "status_code",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "check_results",
+            "name": "status_code"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "latency_ms",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "check_results",
+            "name": "latency_ms"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "failure_reason: Reason",
+        "type_info": {
+          "Custom": {
+            "name": "failure_reason",
+            "kind": {
+              "Enum": [
+                "timeout",
+                "connection_refused",
+                "dns_resolution",
+                "other"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "check_results",
+            "name": "failure_reason"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "failure_message",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "check_results",
+            "name": "failure_message"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status: CheckResultRowStatus",
+        "type_info": {
+          "Custom": {
+            "name": "check_status",
+            "kind": {
+              "Enum": [
+                "success",
+                "unexpected_status",
+                "fail"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "check_results",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "9bc87da7eea8173010a8998c120f71e1535f11104b2b939d966177e970d83c9f"
+}
