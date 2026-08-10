@@ -14,14 +14,14 @@ services:
       timeout: 5s
       retries: 5
   
-  app:
-    build: 
+  api:
+    build:
       context: .
-      dockerfile: Dockerfile
-    image: watchdog:latest
+      dockerfile: watchdog_api/Dockerfile
+    image: watchdog-api:latest
     restart: always
     ports:
-      - "3000:3000"
+    - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -34,3 +34,22 @@ services:
       DATABASE_MAX_CONNECTIONS: 4
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 3000
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: watchdog_scheduler/Dockerfile
+    image: watchdog-scheduler:latest
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_USER: postgres
+      DATABASE_HOST: db
+      DATABASE_PASSWORD: admin
+      DATABASE_PORT: 5432
+      DATABASE_DB_NAME: watchdog
+      DATABASE_MAX_CONNECTIONS: 4
+
+

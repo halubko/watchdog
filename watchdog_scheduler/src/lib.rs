@@ -33,8 +33,6 @@ where
             let mut interval = tokio::time::interval(Duration::from_secs(endpoint.interval as u64));
 
             loop {
-                interval.tick().await;
-
                 let status = check(&client, &endpoint).await;
 
                 let new_check_result = NewCheckResult {
@@ -42,9 +40,12 @@ where
                     status,
                 };
 
-                if let Err(err) = check_result_repo.save(new_check_result).await {
-                    tracing::error!("failed to save check result: {err}");
-                }
+                match check_result_repo.save(new_check_result).await {
+                    Ok(_) => tracing::info!("Check for {} saved", &endpoint.url),
+                    Err(e) => tracing::error!("failed to save check result: {e}"),
+                };
+
+                interval.tick().await;
             }
         });
 

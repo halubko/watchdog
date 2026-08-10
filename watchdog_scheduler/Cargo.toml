@@ -7,9 +7,16 @@ edition.workspace = true
 name = "watchdog_scheduler"
 path = "src/lib.rs"
 
+[[bin]]
+name = "watchdog_scheduler"
+path = "src/main.rs"
+
 [dependencies]
 reqwest = "0.13.4"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.44"
+tracing-subscriber = "0.3"
 
+watchdog_config = { path = "../watchdog_config" }
+watchdog_db = { path = "../watchdog_db" }
 watchdog_core = { path = "../watchdog_core" }

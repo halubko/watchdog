@@ -14,6 +14,7 @@ COPY watchdog_api/Cargo.toml watchdog_api/Cargo.toml
 
 RUN mkdir -p watchdog_core/src watchdog_db/src watchdog_api/src watchdog_config/src watchdog_scheduler/src \
     && echo "fn main() {}" > watchdog_api/src/main.rs \
+    && echo "fn main() {}" > watchdog_scheduler/src/main.rs \
     && echo "// placeholder" > watchdog_core/src/lib.rs \
     && echo "// placeholder" > watchdog_db/src/lib.rs \
     && echo "// placeholder" > watchdog_config/src/lib.rs \

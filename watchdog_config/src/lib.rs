@@ -52,16 +52,28 @@ pub struct ServerConfig {
     pub port: u16,
 }
 
-pub fn config() -> Result<Config, ConfigErrors> {
+pub fn db_config() -> Result<DatabaseConfig, ConfigErrors> {
     dotenvy::dotenv().ok();
 
-    let db_config: DatabaseConfig = envy::prefixed("DATABASE_")
+    let db_config = envy::prefixed("DATABASE_")
         .from_env()
         .map_err(ConfigErrors::DatabaseError)?;
 
-    let server_config: ServerConfig = envy::prefixed("SERVER_")
+    Ok(db_config)
+}
+
+pub fn server_config() -> Result<ServerConfig, ConfigErrors> {
+    dotenvy::dotenv().ok();
+
+    let server_config = envy::prefixed("SERVER_")
         .from_env()
         .map_err(ConfigErrors::ServerError)?;
 
+    Ok(server_config)
+}
+
+pub fn config() -> Result<Config, ConfigErrors> {
+    let db_config = db_config()?;
+    let server_config = server_config()?;
     Ok(Config::new(db_config, server_config))
 }

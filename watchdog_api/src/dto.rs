@@ -3,6 +3,6 @@ pub mod endpoints;
 
 #[derive(serde::Deserialize)]
 pub struct Pagination {
-    pub limit: u16,
-    pub offset: u16,
+    pub limit: Option<u16>,
+    pub offset: Option<u16>,
 }

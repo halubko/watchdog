@@ -45,7 +45,10 @@ pub async fn get_list_endpoint(
 ) -> Result<(StatusCode, Json<Vec<EndpointResponse>>), ApiError> {
     let endpoints = state
         .endpoints
-        .list(pagination.limit, pagination.offset)
+        .list(
+            pagination.limit.unwrap_or(u16::MAX),
+            pagination.offset.unwrap_or(u16::MAX),
+        )
         .await?
         .into_iter()
         .map(|endpoint| endpoint.into())

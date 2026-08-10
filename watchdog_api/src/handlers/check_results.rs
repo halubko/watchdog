@@ -24,7 +24,11 @@ pub async fn get_list_check_results(
 ) -> Result<(StatusCode, Json<Vec<CheckResultResponse>>), ApiError> {
     let check_results = state
         .check_results
-        .list(endpoint_id, pagination.limit, pagination.offset)
+        .list(
+            endpoint_id,
+            pagination.limit.unwrap_or(u16::MAX),
+            pagination.offset.unwrap_or(u16::MAX),
+        )
         .await?
         .into_iter()
         .map(|check_result| check_result.into())

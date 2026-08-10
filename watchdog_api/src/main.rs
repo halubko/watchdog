@@ -1,7 +1,6 @@
 use std::{process, sync::Arc};
 
 use watchdog_db::{check_result::PgCheckResultRepo, endpoint::PgEndpointRepo, migrate};
-use watchdog_scheduler::run;
 
 use crate::app::AppState;
 
@@ -12,14 +11,12 @@ pub mod handlers;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt().with_file(true).init();
 
     let config = watchdog_config::config().unwrap_or_else(|err| {
         tracing::error!("{err}");
         process::exit(1);
     });
-
-    tracing::info!("connecting to: {}", config.db_url());
 
     let pool = match watchdog_db::connect(&config.database).await {
         Ok(connection) => {
@@ -37,7 +34,6 @@ async fn main() {
         process::exit(1)
     }
 
-    let client = reqwest::Client::new();
     let endpoint_repo = PgEndpointRepo::new(pool.clone());
     let check_results_repo = PgCheckResultRepo::new(pool);
 
@@ -63,10 +59,7 @@ async fn main() {
 
     tracing::info!("listening on {}:{}", config.server.host, config.server.port);
 
-    if let (Err(e), ()) = tokio::join!(
-        axum::serve(listener, app),
-        run(endpoint_repo, check_results_repo, client)
-    ) {
+    if let Err(e) = axum::serve(listener, app).await {
         tracing::error!("{e}");
         process::exit(1)
     };
