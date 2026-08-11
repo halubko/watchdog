@@ -23,6 +23,12 @@ pub async fn create_endpoint(
 ) -> Result<(StatusCode, Json<EndpointResponse>), ApiError> {
     let endpoint = state.endpoints.create(request.try_into()?).await?;
 
+    let notifier = state.notifier.clone();
+
+    tokio::spawn(async move {
+        notifier.notify().await;
+    });
+
     Ok((StatusCode::CREATED, Json(endpoint.into())))
 }
 
@@ -47,7 +53,7 @@ pub async fn get_list_endpoint(
         .endpoints
         .list(
             pagination.limit.unwrap_or(u16::MAX),
-            pagination.offset.unwrap_or(u16::MAX),
+            pagination.offset.unwrap_or(0),
         )
         .await?
         .into_iter()

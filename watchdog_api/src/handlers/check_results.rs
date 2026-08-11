@@ -27,7 +27,7 @@ pub async fn get_list_check_results(
         .list(
             endpoint_id,
             pagination.limit.unwrap_or(u16::MAX),
-            pagination.offset.unwrap_or(u16::MAX),
+            pagination.offset.unwrap_or(0),
         )
         .await?
         .into_iter()

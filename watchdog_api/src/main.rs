@@ -2,12 +2,13 @@ use std::{process, sync::Arc};
 
 use watchdog_db::{check_result::PgCheckResultRepo, endpoint::PgEndpointRepo, migrate};
 
-use crate::app::AppState;
+use crate::{app::AppState, notifier::Notifier};
 
 pub mod app;
 pub mod dto;
 pub mod error;
 pub mod handlers;
+pub mod notifier;
 
 #[tokio::main]
 async fn main() {
@@ -36,10 +37,12 @@ async fn main() {
 
     let endpoint_repo = PgEndpointRepo::new(pool.clone());
     let check_results_repo = PgCheckResultRepo::new(pool);
+    let notifier = Arc::new(Notifier::new("scheduler:8080".to_string()));
 
     let state = Arc::new(AppState::new(
         endpoint_repo.clone(),
         check_results_repo.clone(),
+        notifier,
     ));
 
     let app = app::app(state);
