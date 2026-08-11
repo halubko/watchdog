@@ -23,6 +23,12 @@ pub async fn create_endpoint(
 ) -> Result<(StatusCode, Json<EndpointResponse>), ApiError> {
     let endpoint = state.endpoints.create(request.try_into()?).await?;
 
+    let notifier = state.notifier.clone();
+
+    tokio::spawn(async move {
+        notifier.notify().await;
+    });
+
     Ok((StatusCode::CREATED, Json(endpoint.into())))
 }
 

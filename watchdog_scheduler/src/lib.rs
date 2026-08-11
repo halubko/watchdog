@@ -1,31 +1,36 @@
 use std::{sync::Arc, time::Duration};
 
-use tokio::task::JoinHandle;
-use watchdog_core::{CheckResultRepo, EndpointRepo, NewCheckResult};
+use tokio::{sync::RwLock, task::JoinHandle};
+use watchdog_core::{CheckResultRepo, Endpoint, EndpointRepo, NewCheckResult};
 
-use crate::checker::check;
+use crate::{checker::check, signal::dispatch};
 
 pub mod checker;
+pub mod signal;
+
+pub struct EndpointCache {
+    pub endpoint_repo: Arc<dyn EndpointRepo + Send + Sync>,
+    pub endpoints: Arc<RwLock<Vec<Endpoint>>>,
+}
 
 pub async fn run<E, C>(endpoint_repo: E, check_result_repo: C, client: reqwest::Client)
 where
     E: EndpointRepo + Send + Sync + 'static,
     C: CheckResultRepo + Send + Sync + 'static,
 {
+    let endpoint_repo = Arc::new(endpoint_repo);
     let check_result_repo = Arc::new(check_result_repo);
     let client = Arc::new(client);
 
-    let endpoints = match endpoint_repo.list(u16::MAX, 0).await {
-        Ok(endpoint) => endpoint,
-        Err(e) => {
-            tracing::error!("{e}");
-            return;
-        }
-    };
+    let endpoints: Arc<RwLock<Vec<Endpoint>>> = Arc::new(RwLock::new(vec![]));
+
+    dispatch(&endpoint_repo, &endpoints).await;
 
     let mut handlers: Vec<JoinHandle<()>> = vec![];
 
-    for endpoint in endpoints {
+    let endpoints_vec = endpoints.clone().read().await.to_vec();
+
+    for endpoint in endpoints_vec {
         let check_result_repo = check_result_repo.clone();
         let client = Arc::clone(&client);
 
