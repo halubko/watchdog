@@ -1,4 +1,4 @@
-use std::process;
+use std::{process, sync::Arc};
 
 use watchdog_db::{check_result::PgCheckResultRepo, endpoint::PgEndpointRepo};
 
@@ -6,7 +6,7 @@ use watchdog_db::{check_result::PgCheckResultRepo, endpoint::PgEndpointRepo};
 async fn main() {
     tracing_subscriber::fmt().with_file(true).init();
 
-    let client = reqwest::Client::new();
+    let client = Arc::new(reqwest::Client::new());
 
     let db_config = watchdog_config::db_config().unwrap_or_else(|err| {
         tracing::error!("{err}");
@@ -24,8 +24,8 @@ async fn main() {
         }
     };
 
-    let endpoint_repo = PgEndpointRepo::new(pool.clone());
-    let check_results_repo = PgCheckResultRepo::new(pool);
+    let endpoint_repo = Arc::new(PgEndpointRepo::new(pool.clone()));
+    let check_results_repo = Arc::new(PgCheckResultRepo::new(pool));
 
-    watchdog_scheduler::run(endpoint_repo, check_results_repo, client).await;
+    watchdog_scheduler::supervisor(endpoint_repo, check_results_repo, client).await;
 }

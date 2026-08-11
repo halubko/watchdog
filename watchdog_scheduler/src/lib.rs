@@ -1,63 +1,68 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use tokio::{sync::RwLock, task::JoinHandle};
-use watchdog_core::{CheckResultRepo, Endpoint, EndpointRepo, NewCheckResult};
+use tokio::task::JoinHandle;
+use uuid::Uuid;
+use watchdog_core::{CheckResultRepo, EndpointRepo, NewCheckResult};
 
-use crate::{checker::check, signal::dispatch};
+use crate::checker::check;
 
 pub mod checker;
 pub mod signal;
 
-pub struct EndpointCache {
-    pub endpoint_repo: Arc<dyn EndpointRepo + Send + Sync>,
-    pub endpoints: Arc<RwLock<Vec<Endpoint>>>,
-}
-
-pub async fn run<E, C>(endpoint_repo: E, check_result_repo: C, client: reqwest::Client)
-where
+pub async fn supervisor<E, C>(
+    endpoints_repo: Arc<E>,
+    check_result_repo: Arc<C>,
+    client: Arc<reqwest::Client>,
+) where
     E: EndpointRepo + Send + Sync + 'static,
     C: CheckResultRepo + Send + Sync + 'static,
 {
-    let endpoint_repo = Arc::new(endpoint_repo);
-    let check_result_repo = Arc::new(check_result_repo);
-    let client = Arc::new(client);
+    let mut active: HashMap<Uuid, JoinHandle<()>> = HashMap::new();
+    let notify = Arc::new(tokio::sync::Notify::new());
 
-    let endpoints: Arc<RwLock<Vec<Endpoint>>> = Arc::new(RwLock::new(vec![]));
+    tokio::spawn(signal::dispatch(Arc::clone(&notify)));
 
-    dispatch(&endpoint_repo, &endpoints).await;
-
-    let mut handlers: Vec<JoinHandle<()>> = vec![];
-
-    let endpoints_vec = endpoints.clone().read().await.to_vec();
-
-    for endpoint in endpoints_vec {
-        let check_result_repo = check_result_repo.clone();
-        let client = Arc::clone(&client);
-
-        let task = tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(endpoint.interval as u64));
-
-            loop {
-                let status = check(&client, &endpoint).await;
-
-                let new_check_result = NewCheckResult {
-                    endpoint_id: endpoint.id,
-                    status,
-                };
-
-                match check_result_repo.save(new_check_result).await {
-                    Ok(_) => tracing::info!("Check for {} saved", &endpoint.url),
-                    Err(e) => tracing::error!("failed to save check result: {e}"),
-                };
-
-                interval.tick().await;
+    loop {
+        let current_endpoints = match endpoints_repo.list(u16::MAX, 0).await {
+            Ok(vec) => vec,
+            Err(e) => {
+                tracing::error!("{e}");
+                return;
             }
-        });
+        };
 
-        handlers.push(task);
-    }
+        for endpoint in &current_endpoints {
+            if !active.contains_key(&endpoint.id) {
+                let check_result_repo = Arc::clone(&check_result_repo);
+                let client = Arc::clone(&client);
+                let endpoint = endpoint.clone();
+                let endpoint_id = endpoint.id;
 
-    for handler in handlers {
-        let _ = handler.await;
+                let handle = tokio::spawn(async move {
+                    let mut interval =
+                        tokio::time::interval(Duration::from_secs(endpoint.interval as u64));
+
+                    loop {
+                        interval.tick().await;
+
+                        let status = check(&client, &endpoint).await;
+
+                        let new_check_result = NewCheckResult {
+                            endpoint_id: endpoint.id,
+                            status,
+                        };
+
+                        match check_result_repo.save(new_check_result).await {
+                            Ok(_) => tracing::info!("Check for {} saved", &endpoint.url),
+                            Err(e) => tracing::error!("failed to save check result: {e}"),
+                        }
+                    }
+                });
+
+                active.insert(endpoint_id, handle);
+            }
+        }
+
+        notify.notified().await;
     }
 }

@@ -53,7 +53,7 @@ pub async fn get_list_endpoint(
         .endpoints
         .list(
             pagination.limit.unwrap_or(u16::MAX),
-            pagination.offset.unwrap_or(u16::MAX),
+            pagination.offset.unwrap_or(0),
         )
         .await?
         .into_iter()

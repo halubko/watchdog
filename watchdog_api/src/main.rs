@@ -37,7 +37,7 @@ async fn main() {
 
     let endpoint_repo = PgEndpointRepo::new(pool.clone());
     let check_results_repo = PgCheckResultRepo::new(pool);
-    let notifier = Arc::new(Notifier::new("0.0.0.0:8080".to_string()));
+    let notifier = Arc::new(Notifier::new("localhost:8080".to_string()));
 
     let state = Arc::new(AppState::new(
         endpoint_repo.clone(),
