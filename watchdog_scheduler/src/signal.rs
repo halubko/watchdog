@@ -24,10 +24,10 @@ pub async fn dispatch(notify: Arc<sync::Notify>) {
         tokio::spawn(async move {
             let mut buf = [0u8; 1024];
 
-            if let Ok(n) = socket.read(&mut buf).await {
-                if n > 0 {
-                    notify.notify_one();
-                }
+            if let Ok(n) = socket.read(&mut buf).await
+                && n > 0
+            {
+                notify.notify_one();
             }
         });
     }
