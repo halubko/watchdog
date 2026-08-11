@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::{io::AsyncReadExt, net::TcpListener, sync};
 
 pub async fn dispatch(notify: Arc<sync::Notify>) {
-    let listener = match TcpListener::bind("localhost:8080").await {
+    let listener = match TcpListener::bind("0.0.0.0:8080").await {
         Ok(listener) => listener,
         Err(e) => {
             tracing::error!("{e}");
